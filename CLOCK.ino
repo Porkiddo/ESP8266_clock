@@ -42,7 +42,7 @@ void setup(void) {
   matrix.setRotation(2, 3);    // The first display is position upside down
   matrix.setRotation(3, 3);    // The same hold for the last display
   
-  //ESP.wdtDisable();                               // used to debug, disable wachdog timer, 
+  //ESP.wdtDisable();                             // used to debug, disable wachdog timer, 
   Serial.begin(115200);                           // full speed to monitor
                                
   WiFi.begin(SSID, PASS);                         // Connect to WiFi network
@@ -63,17 +63,17 @@ void loop() {
   dateTime = NTPch.getNTPtime(0, 1);
   NTPch.printDateTime(dateTime);
 
-  byte actualHour = dateTime.hour;
-  byte actualMinute = dateTime.minute;
-  byte actualsecond = dateTime.second;
-  int  actualyear = dateTime.year;
-  byte actualMonth = dateTime.month;
-  byte actualday = dateTime.day;
-  byte actualdayofWeek = dateTime.dayofWeek;
+  String actualHour      = String(dateTime.hour);
+  String actualMinute    = String(dateTime.minute);
+  String actualsecond    = String(dateTime.second);
+  int    actualyear      = dateTime.year;
+  String actualMonth     = String(dateTime.month);
+  String actualday       = String(dateTime.day);
+  String actualdayofWeek = String(dateTime.dayofWeek);
 
-  String dayTime = String(actualHour)+ ":" + String(actualMinute) + " " + String(actualyear) + "-" + String(actualMonth) + "-" + String(actualday);
+  dayTime = actualHour + ":" + actualMinute + " "  + actualday + "-" + actualMonth  + "-" + actualyear;
   
-  Serial.println(dayTime); // Just to double check
+  // Serial.println(dayTime); // Just to double check
   
   for ( int i = 0 ; i < width * dayTime.length() + matrix.width() - 1 - spacer; i++ ) {
     matrix.fillScreen(LOW);
@@ -96,4 +96,3 @@ void loop() {
     delay(wait);
   }
 }
-
