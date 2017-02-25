@@ -5,12 +5,17 @@
 const int DIN_PIN = D7;
 const int CS_PIN = D3;
 const int CLK_PIN = D5;
+
 int button = D4;
-int val = 0;
-//#define SSID "**"         // WORK
-//#define PASS "**"                // WORK
-#define SSID "**"                    // Home SSID
-#define PASS "**"                    // HOME PASS
+int val = 0;                               // Variable from button
+int sensor = A0;
+int light = 0;                             // Sensor values
+int setInt = 0;                            // Intensity variable to screens
+
+//#define SSID "***"         // WORK
+//#define PASS "***"                // WORK
+#define SSID "***"                    // Home SSID
+#define PASS "***"                    // HOME PASS
 
 NTPtime NTPch("gb.pool.ntp.org");          //NTP Great Britain Poool
 
@@ -43,8 +48,6 @@ const uint64_t IMAGES2[] = {
 const int IMAGES2_LEN = sizeof(IMAGES2)/8;
 
 LedControl display = LedControl(DIN_PIN, CLK_PIN, CS_PIN,4);
-
-int setInt = 4;   // Set overall display intensity
 
 void displayImage3(uint64_t image) {
   for (int i = 0; i < 8; i++) {
@@ -80,24 +83,28 @@ void displayImage0(uint64_t image) {
 }
 
 unsigned long previousMillis = 0;
+unsigned long spreviousMillis = 0;
+
 long FastUp = 500;
 long SlowUp = 60000;
 
 void setup() {
   pinMode(button, INPUT_PULLUP);
+  pinMode(sensor, INPUT);
   
   display.clearDisplay(0);
   display.shutdown(0, false);
-  display.setIntensity(0, setInt);
+  display.setIntensity(0, 4);
   display.clearDisplay(1);
   display.shutdown(1, false);
-  display.setIntensity(1, setInt);
+  display.setIntensity(1, 4);
   display.clearDisplay(02);
   display.shutdown(2, false);
-  display.setIntensity(2, setInt);
+  display.setIntensity(2, 4);
   display.clearDisplay(3);
   display.shutdown(3, false);
-  display.setIntensity(3, setInt);
+  display.setIntensity(3, 4);
+  
   Serial.begin(115200);                           // full speed to monitor
                                
   WiFi.begin(SSID, PASS);                         // Connect to WiFi network
@@ -122,10 +129,35 @@ void setup() {
 }
 
 void loop() {
-  
-  unsigned long currentMillis = millis();
-  
-if (currentMillis - previousMillis >= SlowUp){
+    
+    unsigned long currentMillis = millis();            // Counter for NTP
+    unsigned long scurrentMillis = millis();           // Counter for light sensor
+
+    // Start the Light Sensor functions
+    if (scurrentMillis - spreviousMillis >= 5000){     // Sensor starts reading
+      light = analogRead(sensor);
+      Serial.println(analogRead(sensor));              // Debug
+      Serial.println(light);                           // Debug
+      
+      if (light < 40){
+        setInt = 7;
+      }
+      if (light > 40 and light < 400 ){
+      setInt = 4;
+        }
+        if (light > 400) {
+          setInt=1;
+        }
+        Serial.println(setInt);                        // Debug
+    display.setIntensity(0, setInt);                   // Intensity set to Matrix x 4
+    display.setIntensity(1, setInt);
+    display.setIntensity(2, setInt);
+    display.setIntensity(3, setInt);
+    spreviousMillis = scurrentMillis;
+    }
+
+// Start the NTP Functions
+  if (currentMillis - previousMillis >= SlowUp){
     
     dateTime = NTPch.getNTPtime(0, 1); // first parameter: Time zone in floating point (for India); second parameter: 1 for European summer time
     NTPch.printDateTime(dateTime);
@@ -159,8 +191,9 @@ if (currentMillis - previousMillis >= SlowUp){
       }
       previousMillis = currentMillis; // Save the last number
 }
+
+// Button Functions
   val = digitalRead(button);
-  
   if(val == LOW){                   // If button pressed show something else for half second
     Serial.println("BUTTON");
     displayImage3(IMAGES2[6]);                      
