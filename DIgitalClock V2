@@ -5,13 +5,14 @@
 const int DIN_PIN = D7;
 const int CS_PIN = D3;
 const int CLK_PIN = D5;
+int button = D4;
+int val = 0;
+//#define SSID "BTBusinessHub-663"         // WORK
+//#define PASS "4539335742"                // WORK
+#define SSID "SKY4F0EF"                    // Home SSID
+#define PASS "EBVCXUBC"                    // HOME PASS
 
-//#define SSID "**"             // WORK
-//#define PASS "**"                    // WORK
-#define SSID "**"                    // Home SSID
-#define PASS "**"                    // HOME PASS
-
-NTPtime NTPch("gb.pool.ntp.org"); //NTP Great Britain Poool
+NTPtime NTPch("gb.pool.ntp.org");          //NTP Great Britain Poool
 
 strDateTime dateTime;
 
@@ -43,7 +44,7 @@ const int IMAGES2_LEN = sizeof(IMAGES2)/8;
 
 LedControl display = LedControl(DIN_PIN, CLK_PIN, CS_PIN,4);
 
-int setInt = 4; // Set overall display intensity
+int setInt = 4;   // Set overall display intensity
 
 void displayImage3(uint64_t image) {
   for (int i = 0; i < 8; i++) {
@@ -78,7 +79,12 @@ void displayImage0(uint64_t image) {
   }
 }
 
+unsigned long previousMillis = 0;
+long FastUp = 500;
+long SlowUp = 60000;
+
 void setup() {
+  pinMode(button, INPUT_PULLUP);
   
   display.clearDisplay(0);
   display.shutdown(0, false);
@@ -98,7 +104,7 @@ void setup() {
   while (WiFi.status() != WL_CONNECTED) {         // Wait for connection
     delay(500);
     Serial.print(".");
-    displayImage3(IMAGES2[1]);
+    displayImage3(IMAGES2[1]);                    // Shows heart beat while connecting
     delay(100);
     displayImage3(IMAGES2[0]);
     delay(100);
@@ -108,7 +114,7 @@ void setup() {
   Serial.println(SSID);                           // to monitor             
   Serial.println(WiFi.localIP());                 // Serial monitor prints localIP
   Serial.println("Connected!");
-  displayImage3(IMAGES2[2]);
+  displayImage3(IMAGES2[2]);                      // Show circules while pulling NTP
   displayImage2(IMAGES2[2]);
   displayImage1(IMAGES2[2]);
   displayImage0(IMAGES2[2]);
@@ -116,36 +122,52 @@ void setup() {
 }
 
 void loop() {
-  dateTime = NTPch.getNTPtime(0, 1); // first parameter: Time zone in floating point (for India); second parameter: 1 for European summer time
-  NTPch.printDateTime(dateTime);
-
-  int actualHour      = int (dateTime.hour);
-  int actualMinute    = int(dateTime.minute);
-  int actualsecond    = int(dateTime.second);
-  int actualyear      = int(dateTime.year);
-  int actualMonth     = int(dateTime.month);
-  int actualday       = int(dateTime.day);
-  int actualdayofWeek = int(dateTime.dayofWeek);
   
- 
-  uint8_t ones,tens;  //Separate digits from hours
-  tens = actualHour/10;
-  ones = actualHour-tens*10;
-  int h1 = tens;
-  displayImage0(IMAGES[h1]); //print to matrix 1
-  delay(500);
-  int h2 = ones;
-  displayImage1(IMAGES[h2]); //print to matrix 2
-  delay(500);
+  unsigned long currentMillis = millis();
   
-  uint8_t mones,mtens; //Separate digits from minutes
-  mtens = actualMinute/10;
-  mones = actualMinute-mtens*10;
+if (currentMillis - previousMillis >= SlowUp){
+    
+    dateTime = NTPch.getNTPtime(0, 1); // first parameter: Time zone in floating point (for India); second parameter: 1 for European summer time
+    NTPch.printDateTime(dateTime);
+    
 
-  int m1 = mtens;
-  displayImage2(IMAGES[m1]); //print to matrix 3
-  delay(500);
-  int m2 = mones;
-  displayImage3(IMAGES[m2]); //print to matrix 4
-  delay(59500);
+    int actualHour      = int(dateTime.hour);
+    int actualMinute    = int(dateTime.minute);
+    int actualsecond    = int(dateTime.second);
+    int actualyear      = int(dateTime.year);
+    int actualMonth     = int(dateTime.month);
+    int actualday       = int(dateTime.day);
+    int actualdayofWeek = int(dateTime.dayofWeek);
+    
+    if (currentMillis - previousMillis >= FastUp)
+      {  
+      uint8_t ones,tens;            //Separate digits from hours
+      tens = actualHour/10;
+      ones = actualHour-tens*10;
+      int h1 = tens;
+      displayImage0(IMAGES[h1]);    //print to matrix 1
+      int h2 = ones;
+      displayImage1(IMAGES[h2]);    //print to matrix 2
+    
+      uint8_t mones,mtens;          //Separate digits from minutes
+      mtens = actualMinute/10;
+      mones = actualMinute-mtens*10;  
+      int m1 = mtens;
+      displayImage2(IMAGES[m1]);    //print to matrix 3
+      int m2 = mones;
+      displayImage3(IMAGES[m2]);    //print to matrix 4
+      }
+      previousMillis = currentMillis; // Save the last number
+}
+  val = digitalRead(button);
+  
+  if(val == LOW){                   // If button pressed show something else for half second
+    Serial.println("BUTTON");
+    displayImage3(IMAGES2[6]);                      
+    displayImage2(IMAGES2[6]);
+    displayImage1(IMAGES2[6]);
+    displayImage0(IMAGES2[6]);
+    delay(500);
+    
+  }
 }
