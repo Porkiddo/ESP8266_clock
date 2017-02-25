@@ -7,10 +7,10 @@ const int CS_PIN = D3;
 const int CLK_PIN = D5;
 int button = D4;
 int val = 0;
-//#define SSID "BTBusinessHub-663"         // WORK
-//#define PASS "4539335742"                // WORK
-#define SSID "SKY4F0EF"                    // Home SSID
-#define PASS "EBVCXUBC"                    // HOME PASS
+//#define SSID "**"         // WORK
+//#define PASS "**"                // WORK
+#define SSID "**"                    // Home SSID
+#define PASS "**"                    // HOME PASS
 
 NTPtime NTPch("gb.pool.ntp.org");          //NTP Great Britain Poool
 
