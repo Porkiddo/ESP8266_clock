@@ -1,0 +1,151 @@
+#include <LedControl.h>
+#include <ESP8266WiFi.h>
+#include <NTPtimeESP.h> 
+
+const int DIN_PIN = D7;
+const int CS_PIN = D3;
+const int CLK_PIN = D5;
+
+//#define SSID "**"             // WORK
+//#define PASS "**"                    // WORK
+#define SSID "**"                    // Home SSID
+#define PASS "**"                    // HOME PASS
+
+NTPtime NTPch("gb.pool.ntp.org"); //NTP Great Britain Poool
+
+strDateTime dateTime;
+
+const uint64_t IMAGES[] = {
+  0x3c66666e76663c00, // 0
+  0x7e1818181c181800, // 1
+  0x7e060c3060663c00, // 2
+  0x3c66603860663c00, // 3
+  0x30307e3234383000, // 4
+  0x3c6660603e067e00, // 5 
+  0x3c66663e06663c00, // 6
+  0x1818183030667e00, // 7
+  0x3c66663c66663c00, // 8
+  0x3c66607c66663c00, // 9
+};
+const int IMAGES_LEN = sizeof(IMAGES)/8;
+
+const uint64_t IMAGES2[] = {
+  0x183c7effffff6600,
+  0xe7c38100000099ff,
+  0x003c424242423c00,
+  0x003c7e7e7e7e3c00,
+  0xffc381818181c3ff,
+  0xffc3bdbdbdbdc3ff,
+  0xffffff7e3c181800,
+  0x00000081c3e7e7ff
+};
+const int IMAGES2_LEN = sizeof(IMAGES2)/8;
+
+LedControl display = LedControl(DIN_PIN, CLK_PIN, CS_PIN,4);
+
+int setInt = 4; // Set overall display intensity
+
+void displayImage3(uint64_t image) {
+  for (int i = 0; i < 8; i++) {
+    byte row = (image >> i * 8) & 0xFF;
+    for (int j = 0; j < 8; j++) {
+      display.setLed(0, i, j, bitRead(row, j));
+    }
+  }
+}
+void displayImage2(uint64_t image) {
+    for (int i = 0; i < 8; i++) {
+    byte row = (image >> i * 8) & 0xFF;
+    for (int j = 0; j < 8; j++) {
+      display.setLed(1, i, j, bitRead(row, j));
+    }
+  }
+  }
+void displayImage1(uint64_t image) {
+  for (int i = 0; i < 8; i++) {
+    byte row = (image >> i * 8) & 0xFF;
+    for (int j = 0; j < 8; j++) {
+      display.setLed(2, i, j, bitRead(row, j));
+    }
+  }
+  }
+void displayImage0(uint64_t image) {
+  for (int i = 0; i < 8; i++) {
+    byte row = (image >> i * 8) & 0xFF;
+    for (int j = 0; j < 8; j++) {
+      display.setLed(3, i, j, bitRead(row, j));
+    }
+  }
+}
+
+void setup() {
+  
+  display.clearDisplay(0);
+  display.shutdown(0, false);
+  display.setIntensity(0, setInt);
+  display.clearDisplay(1);
+  display.shutdown(1, false);
+  display.setIntensity(1, setInt);
+  display.clearDisplay(02);
+  display.shutdown(2, false);
+  display.setIntensity(2, setInt);
+  display.clearDisplay(3);
+  display.shutdown(3, false);
+  display.setIntensity(3, setInt);
+  Serial.begin(115200);                           // full speed to monitor
+                               
+  WiFi.begin(SSID, PASS);                         // Connect to WiFi network
+  while (WiFi.status() != WL_CONNECTED) {         // Wait for connection
+    delay(500);
+    Serial.print(".");
+    displayImage3(IMAGES2[1]);
+    delay(100);
+    displayImage3(IMAGES2[0]);
+    delay(100);
+    }
+  Serial.println();
+  Serial.print("SSID : ");                        // prints SSID in monitor
+  Serial.println(SSID);                           // to monitor             
+  Serial.println(WiFi.localIP());                 // Serial monitor prints localIP
+  Serial.println("Connected!");
+  displayImage3(IMAGES2[2]);
+  displayImage2(IMAGES2[2]);
+  displayImage1(IMAGES2[2]);
+  displayImage0(IMAGES2[2]);
+  delay(500);
+}
+
+void loop() {
+  dateTime = NTPch.getNTPtime(0, 1); // first parameter: Time zone in floating point (for India); second parameter: 1 for European summer time
+  NTPch.printDateTime(dateTime);
+
+  int actualHour      = int (dateTime.hour);
+  int actualMinute    = int(dateTime.minute);
+  int actualsecond    = int(dateTime.second);
+  int actualyear      = int(dateTime.year);
+  int actualMonth     = int(dateTime.month);
+  int actualday       = int(dateTime.day);
+  int actualdayofWeek = int(dateTime.dayofWeek);
+  
+ 
+  uint8_t ones,tens;  //Separate digits from hours
+  tens = actualHour/10;
+  ones = actualHour-tens*10;
+  int h1 = tens;
+  displayImage0(IMAGES[h1]); //print to matrix 1
+  delay(500);
+  int h2 = ones;
+  displayImage1(IMAGES[h2]); //print to matrix 2
+  delay(500);
+  
+  uint8_t mones,mtens; //Separate digits from minutes
+  mtens = actualMinute/10;
+  mones = actualMinute-mtens*10;
+
+  int m1 = mtens;
+  displayImage2(IMAGES[m1]); //print to matrix 3
+  delay(500);
+  int m2 = mones;
+  displayImage3(IMAGES[m2]); //print to matrix 4
+  delay(59500);
+}
