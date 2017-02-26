@@ -85,13 +85,21 @@ void displayImage0(uint64_t image) {
 unsigned long previousMillis = 0;
 unsigned long spreviousMillis = 0;
 
-long FastUp = 500;
-long SlowUp = 60000;
+long FastUpdate = 500;
+long SlowUpdate = 60000;
 
 void setup() {
+  
   pinMode(button, INPUT_PULLUP);
   pinMode(sensor, INPUT);
   
+  for(int index=0;index<display.getDeviceCount();index++)
+  { 
+    display.setIntensity(index,4);
+    display.shutdown(index,false);
+    display.clearDisplay(index);
+   }
+/*  
   display.clearDisplay(0);
   display.shutdown(0, false);
   display.setIntensity(0, 4);
@@ -104,7 +112,7 @@ void setup() {
   display.clearDisplay(3);
   display.shutdown(3, false);
   display.setIntensity(3, 4);
-  
+ */
   Serial.begin(115200);                           // full speed to monitor
                                
   WiFi.begin(SSID, PASS);                         // Connect to WiFi network
@@ -132,32 +140,40 @@ void loop() {
     
     unsigned long currentMillis = millis();            // Counter for NTP
     unsigned long scurrentMillis = millis();           // Counter for light sensor
-
-    // Start the Light Sensor functions
-    if (scurrentMillis - spreviousMillis >= 5000){     // Sensor starts reading
+    
+// Start the Light Sensor functions
+   if (scurrentMillis - spreviousMillis >= 200){
       light = analogRead(sensor);
-      Serial.println(analogRead(sensor));              // Debug
-      Serial.println(light);                           // Debug
-      
-      if (light < 40){
-        setInt = 7;
-      }
-      if (light > 40 and light < 400 ){
-      setInt = 4;
-        }
-        if (light > 400) {
-          setInt=1;
-        }
-        Serial.println(setInt);                        // Debug
+      Serial.println(light);
+      light = map(light, 0,1023,0,10);
+      Serial.println(light);
+      newInt = 10-light;
+      if (newInt < setInt){
+         for (int x = setInt ; newInt < setInt ; x--){
+         setInt = newInt;
+         delay(200);
+       }
+       }
+       if (newInt > setInt){
+          for(int x = setInt ; newInt > setInt ; x++){
+          setInt=newInt;
+          delay(200);
+       }
+       }
+        else{ setInt = newInt;
+        }    
+        
+    Serial.print(setInt);        
     display.setIntensity(0, setInt);                   // Intensity set to Matrix x 4
     display.setIntensity(1, setInt);
     display.setIntensity(2, setInt);
     display.setIntensity(3, setInt);
-    spreviousMillis = scurrentMillis;
-    }
+   spreviousMillis = scurrentMillis; 
+   }
+
 
 // Start the NTP Functions
-  if (currentMillis - previousMillis >= SlowUp){
+  if (currentMillis - previousMillis >= SlowUpdate){
     
     dateTime = NTPch.getNTPtime(0, 1); // first parameter: Time zone in floating point (for India); second parameter: 1 for European summer time
     NTPch.printDateTime(dateTime);
@@ -171,7 +187,7 @@ void loop() {
     int actualday       = int(dateTime.day);
     int actualdayofWeek = int(dateTime.dayofWeek);
     
-    if (currentMillis - previousMillis >= FastUp)
+    if (currentMillis - previousMillis >= FastUpdate)
       {  
       uint8_t ones,tens;            //Separate digits from hours
       tens = actualHour/10;
@@ -201,6 +217,5 @@ void loop() {
     displayImage1(IMAGES2[6]);
     displayImage0(IMAGES2[6]);
     delay(500);
-    
   }
 }
