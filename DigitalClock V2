@@ -98,7 +98,7 @@ void setup() {
     display.setIntensity(index,4);
     display.shutdown(index,false);
    }
-*/  
+/*  
   display.clearDisplay(0);
   display.shutdown(0, false);
   display.setIntensity(0, 4);
