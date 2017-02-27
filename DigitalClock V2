@@ -1,22 +1,38 @@
 #include <LedControl.h>
 #include <ESP8266WiFi.h>
 #include <NTPtimeESP.h> 
+#include <DHT.h>
 
 const int DIN_PIN = D7;
 const int CS_PIN = D3;
 const int CLK_PIN = D5;
 
+int DHTPin = D2;
 int button = D4;
-int val = 0;                               // Variable from button
 int sensor = A0;
+int val = 0;                               // Variable from button
 int light = 0;                             // Sensor values
 int setInt = 0;                            // Intensity variable to screens
+int newInt = 0;
+int temp = 0;
+int hum= 0;
+#define DHTTYPE DHT11
+#define SSID "***-663"         // WORK
+#define PASS "***"                // WORK
+//#define SSID "***"                    // Home SSID
+//#define PASS "***"                    // HOME PASS
 
-//#define SSID "***"         // WORK
-//#define PASS "***"                // WORK
-#define SSID "***"                    // Home SSID
-#define PASS "***"                    // HOME PASS
+static char celsiusTemp[7];
+static char humidityTemp[7];
 
+unsigned long previousMillis = 0;
+unsigned long spreviousMillis = 0;
+unsigned long tpreviousMillis = 0;
+
+long FastUpdate = 500;
+long SlowUpdate = 60000;
+
+DHT dht(DHTPin, DHTTYPE);
 NTPtime NTPch("gb.pool.ntp.org");          //NTP Great Britain Poool
 
 strDateTime dateTime;
@@ -82,29 +98,20 @@ void displayImage0(uint64_t image) {
   }
 }
 
-unsigned long previousMillis = 0;
-unsigned long spreviousMillis = 0;
-
-long FastUp = 500;
-long SlowUp = 60000;
 
 void setup() {
+  
   pinMode(button, INPUT_PULLUP);
   pinMode(sensor, INPUT);
+  dht.begin();
   
-  display.clearDisplay(0);
-  display.shutdown(0, false);
-  display.setIntensity(0, 4);
-  display.clearDisplay(1);
-  display.shutdown(1, false);
-  display.setIntensity(1, 4);
-  display.clearDisplay(02);
-  display.shutdown(2, false);
-  display.setIntensity(2, 4);
-  display.clearDisplay(3);
-  display.shutdown(3, false);
-  display.setIntensity(3, 4);
-  
+  for(int index=0;index<display.getDeviceCount();index++)
+  { 
+    display.setIntensity(index,4);
+    display.shutdown(index,false);
+    display.clearDisplay(index);
+   }
+   
   Serial.begin(115200);                           // full speed to monitor
                                
   WiFi.begin(SSID, PASS);                         // Connect to WiFi network
@@ -132,32 +139,35 @@ void loop() {
     
     unsigned long currentMillis = millis();            // Counter for NTP
     unsigned long scurrentMillis = millis();           // Counter for light sensor
+    unsigned long tcurrentMillis = millis();
 
-    // Start the Light Sensor functions
-    if (scurrentMillis - spreviousMillis >= 5000){     // Sensor starts reading
-      light = analogRead(sensor);
-      Serial.println(analogRead(sensor));              // Debug
-      Serial.println(light);                           // Debug
-      
-      if (light < 40){
-        setInt = 7;
+// Start the Light Sensor functions
+   if (scurrentMillis - spreviousMillis >= 500){
+      light = analogRead(sensor);                      // Read Photoresistor level
+      light = map(light, 0,1023,0,10);                 // Change Values to handle
+      newInt = 10-light;                               // New Intensity -10 sets the new Int to matrix 1-Low 15-Full
+      if (newInt < setInt){                            // Read the changes and set intensity
+         for (int x = setInt ; newInt < setInt ; x--){
+         setInt = newInt;
+       }
+       }
+       if (newInt > setInt){
+          for(int x = setInt ; newInt > setInt ; x++){
+          setInt=newInt;
+       }
+       }
+        else{ setInt = newInt;
+        }        
+      for(int index=0;index<display.getDeviceCount();index++) // Send intensity to the matrix 
+          { 
+           display.setIntensity(index,setInt);
       }
-      if (light > 40 and light < 400 ){
-      setInt = 4;
-        }
-        if (light > 400) {
-          setInt=1;
-        }
-        Serial.println(setInt);                        // Debug
-    display.setIntensity(0, setInt);                   // Intensity set to Matrix x 4
-    display.setIntensity(1, setInt);
-    display.setIntensity(2, setInt);
-    display.setIntensity(3, setInt);
-    spreviousMillis = scurrentMillis;
-    }
+   spreviousMillis = scurrentMillis; 
+   }
+
 
 // Start the NTP Functions
-  if (currentMillis - previousMillis >= SlowUp){
+  if (currentMillis - previousMillis >= SlowUpdate){
     
     dateTime = NTPch.getNTPtime(0, 1); // first parameter: Time zone in floating point (for India); second parameter: 1 for European summer time
     NTPch.printDateTime(dateTime);
@@ -171,7 +181,7 @@ void loop() {
     int actualday       = int(dateTime.day);
     int actualdayofWeek = int(dateTime.dayofWeek);
     
-    if (currentMillis - previousMillis >= FastUp)
+    if (currentMillis - previousMillis >= FastUpdate)
       {  
       uint8_t ones,tens;            //Separate digits from hours
       tens = actualHour/10;
@@ -191,16 +201,47 @@ void loop() {
       }
       previousMillis = currentMillis; // Save the last number
 }
+// Start the Temperature and Humidity Functions
+    if (tcurrentMillis - tpreviousMillis >= 20000){
+        float h = dht.readHumidity();
+           
+            float t = dht.readTemperature();           // Read temperature as Celsius (the default)
+            
+            if (isnan(h) || isnan(t)) {                // Check if any reads failed and exit early (to try again).
+              Serial.println("Failed to read from DHT sensor!");
+              strcpy(celsiusTemp,"Failed");
+              strcpy(humidityTemp, "Failed");         
+            }
+            else{
+              float hic = dht.computeHeatIndex(t, h, false);  // Computes temperature values in Celsius + Fahrenheit and Humidity 
+              dtostrf(hic, 6, 2, celsiusTemp);             
 
+              Serial.print("Humidity: ");
+              Serial.println(h);
+              Serial.println(" %\t Temperature: ");
+              Serial.print(t);
+              Serial.println(" *C ");
+              temp=t;
+              hum=h;
+            }
+              tpreviousMillis = tcurrentMillis;
+    }
 // Button Functions
   val = digitalRead(button);
   if(val == LOW){                   // If button pressed show something else for half second
     Serial.println("BUTTON");
-    displayImage3(IMAGES2[6]);                      
-    displayImage2(IMAGES2[6]);
-    displayImage1(IMAGES2[6]);
-    displayImage0(IMAGES2[6]);
+    uint8_t tones,ttens;            //Separate digits from hours
+      tones = temp/10;
+      ttens = temp-tones*10;
+      int t1 = tones;
+      int t2 = ttens;
+      Serial.print(t1);
+      display.clearDisplay(0);
+      display.clearDisplay(1);
+      displayImage0(IMAGES[t1]);    //print to matrix 1
+      displayImage1(IMAGES[t2]);    //print to matrix 2
+      display.clearDisplay(2);
+      display.clearDisplay(3);
     delay(500);
-    
   }
 }
