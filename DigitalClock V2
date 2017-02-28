@@ -16,11 +16,20 @@ int setInt = 0;                            // Intensity variable to screens
 int newInt = 0;
 int temp = 0;
 int hum= 0;
+
+int actualHour      = 0;
+int actualMinute    = 0;
+int actualsecond    = 0;
+int actualyear      = 0;
+int actualMonth     = 0;
+int actualday       = 0;
+int actualdayofWeek = 0;
+
 #define DHTTYPE DHT11
-#define SSID "***-663"         // WORK
-#define PASS "***"                // WORK
-//#define SSID "***"                    // Home SSID
-//#define PASS "***"                    // HOME PASS
+//#define SSID "BTBusinessHub-663"         // WORK
+//#define PASS "4539335742"                // WORK
+#define SSID "SKY4F0EF"                    // Home SSID
+#define PASS "EBVCXUBC"                    // HOME PASS
 
 static char celsiusTemp[7];
 static char humidityTemp[7];
@@ -59,7 +68,10 @@ const uint64_t IMAGES2[] = {
   0xffc381818181c3ff,
   0xffc3bdbdbdbdc3ff,
   0xffffff7e3c181800,
-  0x00000081c3e7e7ff
+  0x00000081c3e7e7ff,
+  0x0000000006090906, // graus
+  0x60660c1830660600, // %
+  0x0000000000000000 // clear
 };
 const int IMAGES2_LEN = sizeof(IMAGES2)/8;
 
@@ -98,7 +110,36 @@ void displayImage0(uint64_t image) {
   }
 }
 
+void getNTPtime(){
+  dateTime = NTPch.getNTPtime(0, 1); // first parameter: Time zone in floating point (for India); second parameter: 1 for European summer time
+    NTPch.printDateTime(dateTime);
+    
+   actualHour      = int(dateTime.hour);
+   actualMinute    = int(dateTime.minute);
+   actualsecond    = int(dateTime.second);
+   actualyear      = int(dateTime.year);
+   actualMonth     = int(dateTime.month);
+   actualday       = int(dateTime.day);
+   actualdayofWeek = int(dateTime.dayofWeek);
+}
 
+void sendTimeToMatrix(){
+   uint8_t ones,tens;            //Separate digits from hours
+      tens = actualHour/10;
+      ones = actualHour-tens*10;
+      int h1 = tens;
+      displayImage0(IMAGES[h1]);    //print to matrix 1
+      int h2 = ones;
+      displayImage1(IMAGES[h2]);    //print to matrix 2
+    
+      uint8_t mones,mtens;          //Separate digits from minutes
+      mtens = actualMinute/10;
+      mones = actualMinute-mtens*10;  
+      int m1 = mtens;
+      displayImage2(IMAGES[m1]);    //print to matrix 3
+      int m2 = mones;
+      displayImage3(IMAGES[m2]);    //print to matrix 4
+}
 void setup() {
   
   pinMode(button, INPUT_PULLUP);
@@ -141,6 +182,12 @@ void loop() {
     unsigned long scurrentMillis = millis();           // Counter for light sensor
     unsigned long tcurrentMillis = millis();
 
+// Start the NTP Functions
+  if (currentMillis - previousMillis >= SlowUpdate){
+     getNTPtime();
+     previousMillis = currentMillis; 
+}
+ 
 // Start the Light Sensor functions
    if (scurrentMillis - spreviousMillis >= 500){
       light = analogRead(sensor);                      // Read Photoresistor level
@@ -149,60 +196,22 @@ void loop() {
       if (newInt < setInt){                            // Read the changes and set intensity
          for (int x = setInt ; newInt < setInt ; x--){
          setInt = newInt;
-       }
-       }
+       }}
        if (newInt > setInt){
           for(int x = setInt ; newInt > setInt ; x++){
-          setInt=newInt;
-       }
-       }
+          setInt=newInt;        
+       }}
         else{ setInt = newInt;
         }        
       for(int index=0;index<display.getDeviceCount();index++) // Send intensity to the matrix 
           { 
            display.setIntensity(index,setInt);
       }
-   spreviousMillis = scurrentMillis; 
-   }
-
-
-// Start the NTP Functions
-  if (currentMillis - previousMillis >= SlowUpdate){
-    
-    dateTime = NTPch.getNTPtime(0, 1); // first parameter: Time zone in floating point (for India); second parameter: 1 for European summer time
-    NTPch.printDateTime(dateTime);
-    
-
-    int actualHour      = int(dateTime.hour);
-    int actualMinute    = int(dateTime.minute);
-    int actualsecond    = int(dateTime.second);
-    int actualyear      = int(dateTime.year);
-    int actualMonth     = int(dateTime.month);
-    int actualday       = int(dateTime.day);
-    int actualdayofWeek = int(dateTime.dayofWeek);
-    
-    if (currentMillis - previousMillis >= FastUpdate)
-      {  
-      uint8_t ones,tens;            //Separate digits from hours
-      tens = actualHour/10;
-      ones = actualHour-tens*10;
-      int h1 = tens;
-      displayImage0(IMAGES[h1]);    //print to matrix 1
-      int h2 = ones;
-      displayImage1(IMAGES[h2]);    //print to matrix 2
-    
-      uint8_t mones,mtens;          //Separate digits from minutes
-      mtens = actualMinute/10;
-      mones = actualMinute-mtens*10;  
-      int m1 = mtens;
-      displayImage2(IMAGES[m1]);    //print to matrix 3
-      int m2 = mones;
-      displayImage3(IMAGES[m2]);    //print to matrix 4
-      }
-      previousMillis = currentMillis; // Save the last number
-}
+  spreviousMillis = scurrentMillis; 
+ }
+   
 // Start the Temperature and Humidity Functions
-    if (tcurrentMillis - tpreviousMillis >= 20000){
+    if (tcurrentMillis - tpreviousMillis >= 60000){
         float h = dht.readHumidity();
            
             float t = dht.readTemperature();           // Read temperature as Celsius (the default)
@@ -215,33 +224,43 @@ void loop() {
             else{
               float hic = dht.computeHeatIndex(t, h, false);  // Computes temperature values in Celsius + Fahrenheit and Humidity 
               dtostrf(hic, 6, 2, celsiusTemp);             
-
+/*
               Serial.print("Humidity: ");
               Serial.println(h);
               Serial.println(" %\t Temperature: ");
               Serial.print(t);
-              Serial.println(" *C ");
+              Serial.println(" *C ");*/
               temp=t;
               hum=h;
             }
               tpreviousMillis = tcurrentMillis;
     }
+      uint8_t tones,ttens;            //Separate digits from hours
+      ttens = temp/10;
+      tones = temp-ttens*10;
+      int t1 = ttens;     
+      int t2 = tones;  
+      uint8_t hones,htens;          //Separate digits from minutes
+      htens = hum/10;
+      hones = hum-htens*10;  
+      int hu1 = htens;
+      int hu2 = hones;
+
 // Button Functions
-  val = digitalRead(button);
-  if(val == LOW){                   // If button pressed show something else for half second
-    Serial.println("BUTTON");
-    uint8_t tones,ttens;            //Separate digits from hours
-      tones = temp/10;
-      ttens = temp-tones*10;
-      int t1 = tones;
-      int t2 = ttens;
-      Serial.print(t1);
-      display.clearDisplay(0);
-      display.clearDisplay(1);
-      displayImage0(IMAGES[t1]);    //print to matrix 1
-      displayImage1(IMAGES[t2]);    //print to matrix 2
-      display.clearDisplay(2);
-      display.clearDisplay(3);
-    delay(500);
+  val = digitalRead(button);      // If button pressed show something else for half second
+  if(val == LOW){   
+     displayImage0(IMAGES2[10]);
+     displayImage1(IMAGES[t1]);    //print to matrix 1
+     displayImage2(IMAGES[t2]);    //print to matrix 2
+     displayImage3(IMAGES2[8]);
+     delay(2000);
+     displayImage0(IMAGES2[10]);
+     displayImage1(IMAGES[hu1]);    //print to matrix 3
+     displayImage2(IMAGES[hu2]);    //print to matrix 4
+     displayImage3(IMAGES2[9]);
+     delay(2000);
+  }
+  else {
+      sendTimeToMatrix();
   }
 }
