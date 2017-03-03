@@ -3,9 +3,7 @@
 #include <NTPtimeESP.h> 
 #include <DHT.h>
 
-const int DIN_PIN = D7;
-const int CS_PIN = D3;
-const int CLK_PIN = D5;
+const int DIN_PIN = D7, CS_PIN = D3, CLK_PIN = D5;
 
 LedControl display = LedControl(DIN_PIN, CLK_PIN, CS_PIN,4);
 
@@ -14,21 +12,13 @@ int button = D4;                          // Button dahhhh
 int sensor = A0;                          // Lightresistor
 int val = 0;                              // Variable from button
 int light = 0;                            // Sensor values
-int setInt = 0;                           // Intensity variable to screens
-int newInt = 0;
-int temp = 0;
-int hum= 0;
+int setInt = 0, newInt = 0;               // Intensity variable to screens
+int temp = 0, hum= 0;                     // Temperature and Humidity Variables
 
-int actualHour      = 0;                  // NTP variables
-int actualMinute    = 0;
-int actualsecond    = 0;
-int actualyear      = 0;
-int actualMonth     = 0;
-int actualday       = 0;
-int actualdayofWeek = 0;
+int actualHour = 0,actualMinute = 0, actualsecond = 0, actualyear, actualMonth = 0, actualday = 0, actualdayofWeek = 0;
 
 #define DHTTYPE DHT11                      // DHT11 Temperature/Humidity Sensor
-//#define SSID "***"         // WORK
+//#define SSID "***-663"         // WORK
 //#define PASS "***"                // WORK
 #define SSID "***"                    // Home SSID
 #define PASS "***"                    // HOME PASS
@@ -36,9 +26,7 @@ int actualdayofWeek = 0;
 static char celsiusTemp[7];
 static char humidityTemp[7];
 
-unsigned long previousMillis = 0;
-unsigned long spreviousMillis = 0;
-unsigned long tpreviousMillis = 0;
+unsigned long previousMillis = 0, spreviousMillis = 0, tpreviousMillis = 0;
 
 long FastUpdate = 500;
 long SlowUpdate = 60000;
