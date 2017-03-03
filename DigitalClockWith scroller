@@ -7,10 +7,10 @@
 #include <DHT.h>
 
 #define DHTTYPE DHT11 
-#define SSID "SKY4F0EF"                    // Home SSID
-#define PASS "EBVCXUBC"                    // HOME PASS
-//#define SSID "BTBusinessHub-663"                      // insert your SSID
-//#define PASS "4539335742"                    // insert your password
+#define SSID "******"                    // Home SSID
+#define PASS "******"                    // HOME PASS
+//#define SSID "****"                      // insert your SSID
+//#define PASS "                    // insert your password
 
 // ******************* String form to sent to the client-browser ************************************
 String form =
