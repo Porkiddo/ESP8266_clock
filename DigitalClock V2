@@ -7,17 +7,19 @@ const int DIN_PIN = D7;
 const int CS_PIN = D3;
 const int CLK_PIN = D5;
 
-int DHTPin = D2;
-int button = D4;
-int sensor = A0;
-int val = 0;                               // Variable from button
-int light = 0;                             // Sensor values
-int setInt = 0;                            // Intensity variable to screens
+LedControl display = LedControl(DIN_PIN, CLK_PIN, CS_PIN,4);
+
+int DHTPin = D2;                          // Temp/Hum sensor
+int button = D4;                          // Button dahhhh
+int sensor = A0;                          // Lightresistor
+int val = 0;                              // Variable from button
+int light = 0;                            // Sensor values
+int setInt = 0;                           // Intensity variable to screens
 int newInt = 0;
 int temp = 0;
 int hum= 0;
 
-int actualHour      = 0;
+int actualHour      = 0;                  // NTP variables
 int actualMinute    = 0;
 int actualsecond    = 0;
 int actualyear      = 0;
@@ -25,11 +27,11 @@ int actualMonth     = 0;
 int actualday       = 0;
 int actualdayofWeek = 0;
 
-#define DHTTYPE DHT11
-//#define SSID "BTBusinessHub-663"         // WORK
-//#define PASS "4539335742"                // WORK
-#define SSID "SKY4F0EF"                    // Home SSID
-#define PASS "EBVCXUBC"                    // HOME PASS
+#define DHTTYPE DHT11                      // DHT11 Temperature/Humidity Sensor
+//#define SSID "***"         // WORK
+//#define PASS "***"                // WORK
+#define SSID "***"                    // Home SSID
+#define PASS "***"                    // HOME PASS
 
 static char celsiusTemp[7];
 static char humidityTemp[7];
@@ -41,8 +43,8 @@ unsigned long tpreviousMillis = 0;
 long FastUpdate = 500;
 long SlowUpdate = 60000;
 
-DHT dht(DHTPin, DHTTYPE);
-NTPtime NTPch("gb.pool.ntp.org");          //NTP Great Britain Poool
+DHT dht(DHTPin, DHTTYPE);                  // Temp/Hum
+NTPtime NTPch("gb.pool.ntp.org");          // NTP Great Britain Poool
 
 strDateTime dateTime;
 
@@ -74,8 +76,6 @@ const uint64_t IMAGES2[] = {
   0x0000000000000000 // clear
 };
 const int IMAGES2_LEN = sizeof(IMAGES2)/8;
-
-LedControl display = LedControl(DIN_PIN, CLK_PIN, CS_PIN,4);
 
 void displayImage3(uint64_t image) {
   for (int i = 0; i < 8; i++) {
