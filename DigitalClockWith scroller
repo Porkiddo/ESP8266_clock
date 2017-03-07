@@ -31,20 +31,22 @@ int numberOfVerticalDisplays = 1;
 String decodedMsg;
 Max72xxPanel matrix = Max72xxPanel(pinCS, numberOfHorizontalDisplays, numberOfVerticalDisplays);
 
-int DHTPin = D2;                          // Temp/Hum sensor
-int button1 = D4;                          // Button dahhhh
-int sensor = A0;                          // Lightresistor
-int val = 0;                              // Variable from button
-int light = 0;                            // Sensor values
-int setInt = 0, newInt = 0;               // Intensity variable to screens
+int DHTPin = D2;                                // Temp/Hum sensor
+int button1 = D4;                               // Button dahhhh
+int button2 = D6;
+int sensor = A0;                                // Lightresistor
+
+int valButton1 = 0, valButton2 = 0, light = 0;  // Variables from buttons n sensor                              
+int setInt = 0, newInt = 0;                     // Intensity variable to screens
 int temp = 0, hum= 0;
 String hour;
 String tape = "Arduino";
 int wait = 250; // In milliseconds
 int clockArray[5]={0,8,13,19,27};         // Position on the matrix for the 5 elements
 int tempArray[3]={9,16,24};               // Position on the matrix for 3 elements
-int spacer = 2;
-int width = 5 + spacer;                   // The font width is 5 pixels
+int spacer = 2, width = 5 + spacer;                   // The font width is 5 pixels
+
+String actualyear, actualMonth, actualday ,actualdayofWeek;
 
 static char celsiusTemp[7], humidityTemp[7];
 
@@ -91,14 +93,8 @@ void handle_msg() {
   decodedMsg.replace("%3D", "=");  
   decodedMsg.replace("%3E", ">");
   decodedMsg.replace("%3F", "?");  
-  decodedMsg.replace("%40", "@"); 
-  //Serial.println(decodedMsg);                   // print original string to monitor
- 
- 
-    
-  //Serial.println(' ');                          // new line in monitor
+  decodedMsg.replace("%40", "@");
 }
-
 
 void getNTPtime(){
    
@@ -126,6 +122,27 @@ void clockToMatrix(){
     }
     matrix.write();
     delay(100);   
+}
+
+void dateToMatrix(){
+  String date = actualyear + "-" + actualMonth + "-" + actualday;
+  for ( int i = 0 ; i < width * date.length() + matrix.width() - spacer; i++ ) {
+    matrix.fillScreen(LOW);    
+    int letter = i / width;
+    int x = (matrix.width() - 1) - i % width;
+    int y = (matrix.height() - 8) / 2; // center the text vertically 
+
+    while ( x + width - spacer >= 0 && letter >= 0 ) {
+      if ( letter < date.length() ) {
+        matrix.drawChar(x, y, date[letter], HIGH, LOW, 1);
+      }
+      letter--;
+      x -= width;
+    }
+    matrix.write(); // Send bitmap to display
+    delay(wait);
+  }
+  delay(10000);
 }
 
 void scroll(){
@@ -183,9 +200,12 @@ void dhtTempprint(){
    matrix.write();
    delay(2000);  
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void setup(void) {
   
   pinMode(button1, INPUT_PULLUP);
+  pinMode(button2, INPUT_PULLUP);
   pinMode(sensor, INPUT);
   dht.begin();              // Start Temp/Hum sensor
   
@@ -227,8 +247,9 @@ void setup(void) {
   Serial.println("WebServer ready!   ");
   Serial.println(WiFi.localIP());                 // Serial monitor prints localIP  
 }
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void loop(void) {
+  
   unsigned long currentMillis = millis();
   unsigned long scurrentMillis = millis();             // Counter for light sensor
   unsigned long tcurrentMillis = millis();
@@ -238,7 +259,7 @@ void loop(void) {
       dhtTemp();
       tpreviousMillis = tcurrentMillis;
     }
-    
+      
 // Light Sensor functions
    if (scurrentMillis - spreviousMillis >= 500){
       light = analogRead(A0);                          // Read Photoresistor level
@@ -256,23 +277,29 @@ void loop(void) {
         }        
         matrix.setIntensity(setInt);                   // Apply intensity changes to matrix
         spreviousMillis = scurrentMillis; 
-    }  
+    } 
+     
 // Get the NTP Functions
   if (currentMillis - previousMillis >= SlowUpdate){
      getNTPtime();
      previousMillis = currentMillis; 
   }
+  
 // Show clock on matrix
    clockToMatrix();
    delay(100);
-
+/* 
 // Show temp/hum when button1 pressed
-/*  val = digitalRead(button1);      // If button pressed show something else for half second
-  if(val == LOW){   
+  valButton1 = digitalRead(button1);      // If button pressed show something else for half second
+  if(valbutton1 == LOW){   
   dhtTempprint();
   delay(100);
   }
-  else {
-      clockToMatrix();
+  
+// Show scrolling date when button2 pressed
+  valButton2 = digitalRead(button2);      // If button pressed show something else for half second
+  if(valButton2 == LOW){   
+  dateToMatrix();
+  delay(100);
   }*/
 }
